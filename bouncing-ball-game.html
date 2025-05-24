@@ -13,6 +13,10 @@
 </head>
 <body>
   <canvas id="gameCanvas" width="480" height="320"></canvas>
+  <div id="mobile-controls" style="text-align:center; margin-top:20px;">
+    <button id="leftBtn" style="font-size:1.5em; padding:10px 30px; margin-right:20px;">⟵ Left</button>
+    <button id="rightBtn" style="font-size:1.5em; padding:10px 30px;">Right ⟶</button>
+  </div>
 
   <script>
     const canvas = document.getElementById('gameCanvas');
@@ -51,6 +55,28 @@
 
     document.addEventListener('keydown', keyDownHandler, false);
     document.addEventListener('keyup', keyUpHandler, false);
+
+    // Mobile controls
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+    if (leftBtn && rightBtn) {
+      leftBtn.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        leftPressed = true;
+      });
+      leftBtn.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        leftPressed = false;
+      });
+      rightBtn.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        rightPressed = true;
+      });
+      rightBtn.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        rightPressed = false;
+      });
+    }
 
     function keyDownHandler(e) {
       if (e.key === 'Right' || e.key === 'ArrowRight') {
