@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Canvas Paddle Game</title>
+  <style>
+    canvas {
+      background: #eee;
+      display: block;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="480" height="320"></canvas>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let ballRadius = 10;
+    let x = canvas.width / 2;
+    let y = canvas.height - 30;
+    let dx = 2;
+    let dy = -2;
+
+    let paddleHeight = 10;
+    let paddleWidth = 75;
+    let paddleX = (canvas.width - paddleWidth) / 2;
+
+    let rightPressed = false;
+    let leftPressed = false;
+
+    let ballColor = getRandomColor();
+    let paddleColor = '#0095DD';
+
+    let score = 0;
+    let nextSpeedIncreaseScore = 5;
+    const maxSpeed = 10;
+
+    let powerUp = null;
+    let powerUpActive = false;
+    let powerUpTimer = 0;
+    const POWER_UP_WIDTH = 20;
+    const POWER_UP_HEIGHT = 20;
+    const POWER_UP_SPEED = 2;
+    const POWER_UP_DURATION = 5000; // ms
+    const POWER_UP_CHANCE = 0.005; // chance per frame
+    const PADDLE_WIDTH_NORMAL = paddleWidth;
+    const PADDLE_WIDTH_POWERED = paddleWidth * 1.7;
+
+    document.addEventListener('keydown', keyDownHandler, false);
+    document.addEventListener('keyup', keyUpHandler, false);
+
+    function keyDownHandler(e) {
+      if (e.key === 'Right' || e.key === 'ArrowRight') {
+        rightPressed = true;
+      } else if (e.key === 'Left' || e.key === 'ArrowLeft') {
+        leftPressed = true;
+      }
+    }
+
+    function keyUpHandler(e) {
+      if (e.key === 'Right' || e.key === 'ArrowRight') {
+        rightPressed = false;
+      } else if (e.key === 'Left' || e.key === 'ArrowLeft') {
+        leftPressed = false;
+      }
+    }
+
+    function getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+      ctx.fillStyle = ballColor;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function drawPaddle() {
+      ctx.beginPath();
+      ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
+      ctx.fillStyle = paddleColor;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function drawScore() {
+      ctx.font = '16px Arial';
+      ctx.fillStyle = '#0095DD';
+      ctx.fillText('Score: ' + score, 8, 20);
+    }
+
+    function increaseSpeed() {
+      dx = Math.sign(dx) * Math.min(Math.abs(dx) * 1.1, maxSpeed);
+      dy = Math.sign(dy) * Math.min(Math.abs(dy) * 1.1, maxSpeed);
+    }
+
+    function collisionDetection() {
+      if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
+        dx = -dx;
+        ballColor = getRandomColor();
+        score++;
+      }
+      if (y + dy < ballRadius) {
+        dy = -dy;
+        ballColor = getRandomColor();
+        score++;
+      } else if (y + dy > canvas.height - ballRadius) {
+        if (x > paddleX - ballRadius && x < paddleX + paddleWidth + ballRadius) {
+          dy = -dy;
+          ballColor = getRandomColor();
+          score++;
+        } else {
+          alert("Game Over!");
+          resetGame();
+        }
+      }
+      if (score >= nextSpeedIncreaseScore) {
+        increaseSpeed();
+        nextSpeedIncreaseScore += 5;
+      }
+    }
+
+    function movePaddle() {
+      if (rightPressed && paddleX < canvas.width - paddleWidth) {
+        paddleX += 7;
+      } else if (leftPressed && paddleX > 0) {
+        paddleX -= 7;
+      }
+    }
+
+    function spawnPowerUp() {
+      if (!powerUp && Math.random() < POWER_UP_CHANCE) {
+        powerUp = {
+          x: Math.random() * (canvas.width - POWER_UP_WIDTH),
+          y: 0,
+          width: POWER_UP_WIDTH,
+          height: POWER_UP_HEIGHT,
+          color: '#FF9800',
+          active: true
+        };
+      }
+    }
+
+    function drawPowerUp() {
+      if (powerUp && powerUp.active) {
+        ctx.beginPath();
+        ctx.rect(powerUp.x, powerUp.y, powerUp.width, powerUp.height);
+        ctx.fillStyle = powerUp.color;
+        ctx.fill();
+        ctx.closePath();
+      }
+    }
+
+    function movePowerUp() {
+      if (powerUp && powerUp.active) {
+        powerUp.y += POWER_UP_SPEED;
+        // Check if caught by paddle
+        if (
+          powerUp.y + powerUp.height >= canvas.height - paddleHeight &&
+          powerUp.x + powerUp.width > paddleX &&
+          powerUp.x < paddleX + paddleWidth
+        ) {
+          powerUp.active = false;
+          powerUp = null;
+          activatePowerUp();
+        } else if (powerUp.y > canvas.height) {
+          powerUp.active = false;
+          powerUp = null;
+        }
+      }
+    }
+
+    function activatePowerUp() {
+      if (!powerUpActive) {
+        paddleWidth = PADDLE_WIDTH_POWERED;
+        powerUpActive = true;
+        powerUpTimer = Date.now();
+      }
+    }
+
+    function updatePowerUpEffect() {
+      if (powerUpActive && Date.now() - powerUpTimer > POWER_UP_DURATION) {
+        paddleWidth = PADDLE_WIDTH_NORMAL;
+        powerUpActive = false;
+      }
+    }
+
+    function resetGame() {
+      x = canvas.width / 2;
+      y = canvas.height - 30;
+      dx = 2;
+      dy = -2;
+      paddleWidth = 75;
+      paddleX = (canvas.width - paddleWidth) / 2;
+      ballColor = getRandomColor();
+      score = 0;
+      nextSpeedIncreaseScore = 5;
+      powerUp = null;
+      powerUpActive = false;
+      powerUpTimer = 0;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawBall();
+      drawPaddle();
+      drawScore();
+      drawPowerUp();
+      collisionDetection();
+      movePaddle();
+      movePowerUp();
+      spawnPowerUp();
+      updatePowerUpEffect();
+
+      x += dx;
+      y += dy;
+
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+  </script>
+</body>
+</html>
